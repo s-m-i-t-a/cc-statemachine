@@ -10,7 +10,7 @@ by adding `cc_statemachine` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:cc_statemachine, "~> 0.0.1"}
+    {:cc_statemachine, "~> 0.1.0"}
   ]
 end
 ```
