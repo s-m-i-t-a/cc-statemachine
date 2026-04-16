@@ -9,7 +9,7 @@ defmodule CatchCake.StateMachine do
         context: context,
         id: id,
         machine: state_machine,
-        state: :init
+        state: :start
       },
       :init
     )
