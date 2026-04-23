@@ -4,24 +4,39 @@ defmodule CatchCake.StateMachine do
   require Logger
 
   def new(state_machine, id, context \\ %{}) do
-    handle_event(
-      %{
-        context: context,
-        id: id,
-        machine: state_machine,
-        state: :start
-      },
-      :init
-    )
+    state_machine
+    |> init_state(id, context)
+    |> handle_event(:init)
   end
 
   def handle_event(machine, event) do
-    %{next: state, action: action} = machine.machine[machine.state][event]
+    next_state = get_next_state(machine, event)
+    action = get_action(machine, event)
 
     machine
     |> update_state(state)
-    |> call_action(action)
+    |> call_action(action, event)
     |> stop_or_continue()
+  end
+
+  defp get_next_state(machine, event) do
+    machine.machine[machine.state][get_event_type(event)][:next]
+  end
+
+  defp get_action(machine, event) do
+    machine.machine[machine.state][get_event_type(event)][:action]
+  end
+
+  defp get_event_type({event_type, _}), do: event_type
+  defp get_event_type(event_type), do: event_type
+
+  defp init_state(machine, id, context) do
+    %{
+      context: context,
+      id: id,
+      machine: machine,
+      state: :start
+    }
   end
 
   defp update_state(machine, new_state) do
@@ -35,8 +50,8 @@ defmodule CatchCake.StateMachine do
   defp update_context(machine, new_context) when is_map(new_context),
     do: Map.put(machine, :context, new_context)
 
-  defp call_action(%{context: context} = machine, action) do
-    case action.(context) do
+  defp call_action(%{context: context} = machine, action, event) do
+    case action.(context, event) do
       {event, context} ->
         {:continue, event, update_context(machine, context)}
 
