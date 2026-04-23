@@ -2,7 +2,7 @@ defmodule CatchCake.StateMachineTest do
   use ExUnit.Case
   doctest CatchCake.StateMachine
 
-  alias CatchCake.StateMachine, as: Machine
+  alias CatchCake.StateMachine
 
   describe "new/2" do
     test "should move state from start to next state" do
@@ -11,7 +11,7 @@ defmodule CatchCake.StateMachineTest do
         next: %{}
       }
 
-      machine = Machine.new(definition, "test")
+      machine = StateMachine.new(definition, "test")
 
       assert machine.state == :next
     end
@@ -30,7 +30,7 @@ defmodule CatchCake.StateMachineTest do
         next: %{}
       }
 
-      Machine.new(definition, "test")
+      StateMachine.new(definition, "test")
 
       assert_received :action_called
     end
@@ -43,7 +43,7 @@ defmodule CatchCake.StateMachineTest do
         next: %{}
       }
 
-      machine = Machine.new(definition, "test", %{context: :context})
+      machine = StateMachine.new(definition, "test", %{context: :context})
 
       assert machine.state == :next
       assert machine.context == %{context: :context}
@@ -65,8 +65,8 @@ defmodule CatchCake.StateMachineTest do
 
       machine =
         definition
-        |> Machine.new("test")
-        |> Machine.handle_event({:ignite, :test})
+        |> StateMachine.new("test")
+        |> StateMachine.handle_event({:ignite, :test})
 
       assert machine.state == :fire
       assert machine.context == %{data: :test}
@@ -84,7 +84,7 @@ defmodule CatchCake.StateMachineTest do
         fire: %{}
       }
 
-      machine = Machine.new(definition, "test")
+      machine = StateMachine.new(definition, "test")
 
       assert machine.state == :fire
     end
