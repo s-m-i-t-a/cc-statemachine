@@ -2,7 +2,91 @@ defmodule CatchCake.StateMachineTest do
   use ExUnit.Case
   doctest CatchCake.StateMachine
 
-  test "greets the world" do
-    assert CatchCake.StateMachine.hello() == :world
+  alias CatchCake.StateMachine, as: Machine
+
+  describe "new/2" do
+    test "should move state from start to next state" do
+      definition = %{
+        start: %{init: %{next: :next, action: fn context, _event -> context end}},
+        next: %{}
+      }
+
+      machine = Machine.new(definition, "test")
+
+      assert machine.state == :next
+    end
+
+    test "should move state from start to next state and call action" do
+      definition = %{
+        start: %{
+          init: %{
+            next: :next,
+            action: fn context, :init ->
+              send(self(), :action_called)
+              context
+            end
+          }
+        },
+        next: %{}
+      }
+
+      Machine.new(definition, "test")
+
+      assert_received :action_called
+    end
+  end
+
+  describe "new/3" do
+    test "should set context" do
+      definition = %{
+        start: %{init: %{next: :next, action: fn context, _event -> context end}},
+        next: %{}
+      }
+
+      machine = Machine.new(definition, "test", %{context: :context})
+
+      assert machine.state == :next
+      assert machine.context == %{context: :context}
+    end
+  end
+
+  describe "handle_event/2" do
+    test "should event with data is properly handled and passed to action" do
+      definition = %{
+        start: %{init: %{next: :next, action: fn context, _event -> context end}},
+        next: %{
+          ignite: %{
+            next: :fire,
+            action: fn context, {:ignite, data} -> Map.put(context, :data, data) end
+          }
+        },
+        fire: %{}
+      }
+
+      machine =
+        definition
+        |> Machine.new("test")
+        |> Machine.handle_event({:ignite, :test})
+
+      assert machine.state == :fire
+      assert machine.context == %{data: :test}
+    end
+
+    test "should self move to next state" do
+      definition = %{
+        start: %{init: %{next: :next, action: fn context, _event -> {:ignite, context} end}},
+        next: %{
+          ignite: %{
+            next: :fire,
+            action: fn context, _event -> context end
+          }
+        },
+        fire: %{}
+      }
+
+      machine = Machine.new(definition, "test")
+
+      assert machine.state == :fire
+    end
   end
 end

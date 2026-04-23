@@ -10,7 +10,7 @@ defmodule CatchCake.StateMachine do
           optional(state()) => %{next: state(), action: action()}
         }
   @type id() :: atom() | binary()
-  @type context() :: any()
+  @type context() :: map()
   @type event_type() :: atom() | binary()
   @type event() :: event_type() | {event_type(), any()}
   @type state_machine() :: %{
@@ -20,15 +20,19 @@ defmodule CatchCake.StateMachine do
           state: state()
         }
 
+  defguardp is_id(id) when is_atom(id) or is_binary(id)
+  defguardp is_event(event) when is_atom(event) or (is_tuple(event) and tuple_size(event) == 2)
+
   @spec new(state_machine_definition(), id(), context()) :: state_machine()
-  def new(state_machine, id, context \\ %{}) do
+  def new(state_machine, id, context \\ %{})
+      when is_map(state_machine) and is_id(id) and is_map(context) do
     state_machine
     |> init_state(id, context)
     |> handle_event(:init)
   end
 
   @spec handle_event(state_machine, event()) :: state_machine()
-  def handle_event(machine, event) do
+  def handle_event(machine, event) when is_map(machine) and is_event(event) do
     next_state = get_next_state(machine, event)
     action = get_action(machine, event)
 
