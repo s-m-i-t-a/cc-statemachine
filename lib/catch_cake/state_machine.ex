@@ -3,18 +3,37 @@ defmodule CatchCake.StateMachine do
 
   require Logger
 
+  @type state() :: atom() | binary()
+  @type action() :: (context(), event() -> context() | {event(), context()})
+  @type state_machine_definition() :: %{
+          required(:start) => %{next: :init, action: action()},
+          optional(state()) => %{next: state(), action: action()}
+        }
+  @type id() :: atom() | binary()
+  @type context() :: any()
+  @type event_type() :: atom() | binary()
+  @type event() :: event_type() | {event_type(), any()}
+  @type state_machine() :: %{
+          context: context(),
+          id: id(),
+          machine: state_machine_definition(),
+          state: state()
+        }
+
+  @spec new(state_machine_definition(), id(), context()) :: state_machine()
   def new(state_machine, id, context \\ %{}) do
     state_machine
     |> init_state(id, context)
     |> handle_event(:init)
   end
 
+  @spec handle_event(state_machine, event()) :: state_machine()
   def handle_event(machine, event) do
     next_state = get_next_state(machine, event)
     action = get_action(machine, event)
 
     machine
-    |> update_state(state)
+    |> update_state(next_state)
     |> call_action(action, event)
     |> stop_or_continue()
   end
