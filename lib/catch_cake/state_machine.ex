@@ -5,9 +5,13 @@ defmodule CatchCake.StateMachine do
 
   @type state() :: atom() | binary()
   @type action() :: (context(), event() -> context() | {event(), context()})
+  @type next() :: %{
+          required(:next) => state(),
+          optional(:action) => action()
+        }
   @type state_machine_definition() :: %{
-          required(:start) => %{next: :init, action: action()},
-          optional(state()) => %{next: state(), action: action()}
+          required(:start) => %{init: next()},
+          optional(state()) => %{required(event_type()) => next()}
         }
   @type id() :: atom() | binary()
   @type context() :: map()
@@ -34,11 +38,11 @@ defmodule CatchCake.StateMachine do
   @spec handle_event(state_machine, event()) :: state_machine()
   def handle_event(machine, event) when is_map(machine) and is_event(event) do
     next_state = get_next_state(machine, event)
-    action = get_action(machine, event)
+    action = maybe_get_action(machine, event)
 
     machine
     |> update_state(next_state)
-    |> call_action(action, event)
+    |> maybe_call_action(action, event)
     |> stop_or_continue()
   end
 
@@ -46,7 +50,7 @@ defmodule CatchCake.StateMachine do
     machine.machine[machine.state][get_event_type(event)][:next]
   end
 
-  defp get_action(machine, event) do
+  defp maybe_get_action(machine, event) do
     machine.machine[machine.state][get_event_type(event)][:action]
   end
 
@@ -73,7 +77,9 @@ defmodule CatchCake.StateMachine do
   defp update_context(machine, new_context) when is_map(new_context),
     do: Map.put(machine, :context, new_context)
 
-  defp call_action(%{context: context} = machine, action, event) do
+  defp maybe_call_action(machine, nil, _event), do: {:stop, machine}
+
+  defp maybe_call_action(%{context: context} = machine, action, event) do
     case action.(context, event) do
       {event, context} ->
         {:continue, event, update_context(machine, context)}

@@ -34,6 +34,17 @@ defmodule CatchCake.StateMachineTest do
 
       assert_received :action_called
     end
+
+    test "should move state from start to next state without defined action" do
+      definition = %{
+        start: %{init: %{next: :next}},
+        next: %{}
+      }
+
+      machine = StateMachine.new(definition, "test")
+
+      assert machine.state == :next
+    end
   end
 
   describe "new/3" do
@@ -87,6 +98,21 @@ defmodule CatchCake.StateMachineTest do
       machine = StateMachine.new(definition, "test")
 
       assert machine.state == :fire
+    end
+
+    test "should move to next state without defined action" do
+      definition = %{
+        start: %{init: %{next: :next}},
+        next: %{run: %{next: :running}},
+        running: %{}
+      }
+
+      machine =
+        definition
+        |> StateMachine.new("test")
+        |> StateMachine.handle_event(:run)
+
+      assert machine.state == :running
     end
   end
 end
