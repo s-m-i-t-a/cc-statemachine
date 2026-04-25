@@ -1,5 +1,9 @@
 defmodule CatchCake.StateMachine do
-  @moduledoc false
+  @moduledoc """
+  #{File.read!("README.md")}
+  """
+
+  @external_resource "README.md"
 
   require Logger
 
